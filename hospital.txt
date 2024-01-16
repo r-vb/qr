@@ -1,0 +1,121 @@
+hospital managment
+
+create table patient 
+(
+ssid int not null,
+date_admitted date not null,
+pname varchar(500) not null,
+ins varchar(1000) not null,
+checkout_date date not null,
+primary key (ssid,date_admitted)
+);
+INSERT INTO patient VALUES(123456, TO_DATE('2024-01-16', 'YYYY-MM-DD'), 'John Doe', 'XYZ Insurance', TO_DATE('2024-01-20', 'YYYY-MM-DD'));
+INSERT INTO patient VALUES(789012, TO_DATE('2024-01-18', 'YYYY-MM-DD'), 'Jane Smith', 'ABC Insurance', TO_DATE('2024-01-25', 'YYYY-MM-DD'));
+INSERT INTO patient VALUES(123456, TO_DATE('2024-04-17', 'YYYY-MM-DD'), 'John Doe', 'XYZ Insurance', TO_DATE('2024-06-20', 'YYYY-MM-DD'));
+
+create table doctor 
+(
+did int not null primary key,
+dname varchar(1000) not null,
+speci varchar(1000) not null
+);
+
+INSERT INTO doctor VALUES (1, 'Dr. Smith', 'Cardiologist');
+INSERT INTO doctor VALUES (2, 'Dr. Johnson', 'Orthopedic Surgeon');
+INSERT INTO doctor VALUES (3, 'Dr. Davis', 'Pediatrician');
+
+
+create table test_on
+(
+testid int not null primary key,
+tname varchar(1000) not null
+);
+INSERT INTO test_on VALUES (1, 'Blood Test');
+INSERT INTO test_on VALUES  (2, 'X-ray');
+INSERT INTO test_on VALUES  (3, 'MRI Scan');
+
+create table dr_patient
+(
+ssid int not null,
+date_admitted date not null,
+did int not null,
+primary key (ssid,date_admitted,did),
+foreign key (ssid,date_admitted) references patient(ssid,date_admitted),
+foreign key (did) references doctor(did)
+);
+
+INSERT INTO dr_patient VALUES (123456, TO_DATE('2024-01-16', 'YYYY-MM-DD'), 1); 
+INSERT INTO dr_patient VALUES(789012, TO_DATE('2024-01-18','YYYY-MM-DD'), 2);
+INSERT INTO dr_patient VALUES(123456, TO_DATE('2024-04-17', 'YYYY-MM-DD'), 3); 
+
+ create table test_log
+(
+ssid int not null,
+date_admitted date not null,
+did int not null,
+testid int not null ,
+primary key (ssid,date_admitted,did,testid),
+foreign key (ssid,date_admitted) references patient(ssid,date_admitted),
+foreign key (did) references doctor(did),
+foreign key (testid) references test_on(testid)
+);
+INSERT INTO test_log VALUES (123456, TO_DATE('2024-01-16', 'YYYY-MM-DD'), 1, 1); 
+INSERT INTO test_log VALUES (789012, TO_DATE('2024-01-18', 'YYYY-MM-DD'), 2, 2); 
+
+1]LIST THE patient name who were admitted more than twice in year 2024
+
+select ssid ,count(date_admitted) as no_of_times
+from patient 
+where date_admitted like '%24'
+group by ssid
+having count(date_admitted) >= 2;
+
+
+2]	select pname,ssid
+	from patient 
+	where ssid in(
+	select  t.ssid
+	from patient p,test_log t
+	where p.ssid=t.ssid and p.date_admitted=t.date_admitted);
+
+
+3]	list test id that has been performed highest number of times
+
+select testid,count(testid) as no_of_times
+	from test_log
+	group by testid
+	having count(testid) >= all
+	(select max(no_of_times)
+	from
+	(select testid,count(testid) as no_of_times
+	from test_log
+	group by testid)
+);
+
+
+4]
+select did,
+from dr_patient
+where ssid =
+(select ssid 
+from dr_patient
+where did = (select did
+		from doctor
+		where dname='Dr. Smith')
+);
+
+
+
+--------------
+4> SELECT dp.did, d.dname
+FROM dr_patient dp
+JOIN doctor d ON dp.did = d.did
+WHERE dp.ssid = (
+    SELECT ssid 
+    FROM dr_patient
+    WHERE did = (
+        SELECT did
+        FROM doctor
+        WHERE dname = 'Dr. Smith'
+    )
+);
